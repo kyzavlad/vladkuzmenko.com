@@ -29,6 +29,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     libpng-dev \
     libtiff-dev \
+    libavcodec-extra \
+    libavformat-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libavdevice-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -41,6 +46,7 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir wheel setuptools && \
+    pip install --no-cache-dir numpy==1.24.3 && \
     pip install --no-cache-dir -r requirements.txt
 
 # Download NLTK data
