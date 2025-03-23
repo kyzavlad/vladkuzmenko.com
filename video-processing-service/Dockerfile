@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
-LABEL maintainer="Your Name <your.email@example.com>"
-LABEL description="Video Processing Service with Subtitle Generation and B-Roll Insertion"
+LABEL maintainer="Vladislav Kuzmenko"
+LABEL description="AI Video Platform - Video Processing Service"
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -21,20 +21,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     curl \
     git \
+    cmake \
+    pkg-config \
+    libopenblas-dev \
+    liblapack-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements files
-COPY requirements.txt requirements-subtitle.txt requirements-broll.txt ./
+# Copy requirements file
+COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir -r requirements-subtitle.txt && \
-    pip install --no-cache-dir -r requirements-broll.txt
+    pip install --no-cache-dir -r requirements.txt
 
 # Download NLTK data
 RUN python -m nltk.downloader punkt wordnet stopwords
@@ -53,4 +58,4 @@ RUN mkdir -p /tmp/video-processing /app/outputs /app/temp
 EXPOSE 8000
 
 # Set entrypoint
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120", "app.main:app"] 
