@@ -1,0 +1,131 @@
+{
+  "version": "1.0",
+  "fps": 30,
+  "avatar": "path/to/avatar.obj",
+  "sections": [
+    {
+      "type": "speech",
+      "start_time": 0.0,
+      "end_time": 4.0,
+      "text": "Hello! I'm your virtual avatar. I can show different expressions and gestures."
+    },
+    {
+      "type": "emotion",
+      "start_time": 0.5,
+      "end_time": 2.5,
+      "emotion": "happy",
+      "intensity": 0.8,
+      "transition": 0.5
+    },
+    {
+      "type": "gesture",
+      "start_time": 1.0,
+      "gesture": "wave"
+    },
+    {
+      "type": "emotion",
+      "start_time": 4.0,
+      "end_time": 6.0,
+      "emotion": "surprised",
+      "intensity": 0.7,
+      "transition": 0.3
+    },
+    {
+      "type": "speech",
+      "start_time": 4.5,
+      "end_time": 7.5,
+      "text": "I can also switch between different camera angles to create dynamic presentations."
+    },
+    {
+      "type": "camera",
+      "start_time": 5.0,
+      "action": "preset",
+      "preset": "three-quarter",
+      "transition": 1.0
+    },
+    {
+      "type": "gesture",
+      "start_time": 6.0,
+      "gesture": "point"
+    },
+    {
+      "type": "environment",
+      "start_time": 7.0,
+      "action": "background",
+      "background_type": "color",
+      "value": [0.2, 0.6, 0.9, 1.0]
+    },
+    {
+      "type": "speech",
+      "start_time": 8.0,
+      "end_time": 12.0,
+      "text": "Our camera path system allows for smooth cinematic movements around the avatar."
+    },
+    {
+      "type": "camera",
+      "start_time": 8.0,
+      "action": "path",
+      "path_name": "orbit",
+      "duration": 8.0,
+      "loop": true
+    },
+    {
+      "type": "environment",
+      "start_time": 9.5,
+      "action": "interact",
+      "object_id": "virtual_button",
+      "interaction_type": "touch"
+    },
+    {
+      "type": "emotion",
+      "start_time": 10.5,
+      "end_time": 13.0,
+      "emotion": "happy",
+      "intensity": 0.9,
+      "transition": 0.4
+    },
+    {
+      "type": "camera",
+      "start_time": 16.0,
+      "action": "path",
+      "path_name": "flyby",
+      "duration": 5.0
+    },
+    {
+      "type": "speech",
+      "start_time": 16.5,
+      "end_time": 20.0,
+      "text": "We can also create dramatic reveal sequences with predefined camera paths."
+    },
+    {
+      "type": "camera",
+      "start_time": 21.0,
+      "action": "path",
+      "path_name": "dramatic_reveal",
+      "duration": 4.0
+    },
+    {
+      "type": "speech",
+      "start_time": 21.5,
+      "end_time": 25.0,
+      "text": "This system allows for precise control over camera movement to enhance storytelling."
+    },
+    {
+      "type": "markup",
+      "start_time": 25.0,
+      "markup": "<speech><happy intensity='0.8'>I'm so excited</happy> to show you these <surprised intensity='0.6'>amazing</surprised> features!</speech>"
+    },
+    {
+      "type": "camera",
+      "start_time": 27.0,
+      "action": "preset",
+      "preset": "front",
+      "transition": 1.0
+    },
+    {
+      "type": "gesture",
+      "start_time": 28.0,
+      "gesture": "nod"
+    }
+  ]
+} 

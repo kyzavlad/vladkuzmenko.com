@@ -1,0 +1,226 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clip-generation-service
+  labels:
+    app: clip-generation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clip-generation-service
+  template:
+    metadata:
+      labels:
+        app: clip-generation-service
+    spec:
+      containers:
+      - name: clip-service
+        image: ${DOCKER_REGISTRY}/clip-generation-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        env:
+        - name: CGS_OUTPUT_DIR
+          value: "/app/data/output"
+        - name: CGS_TEMP_DIR
+          value: "/app/data/temp"
+        - name: CGS_FFMPEG_PATH
+          value: "/usr/bin/ffmpeg"
+        - name: CGS_WORKER_COUNT
+          value: "0"  # Service doesn't run workers
+        - name: CGS_SERVICE_NAME
+          value: "clip-generation-service"
+        - name: CGS_SERVICE_VERSION
+          value: "1.0.0"
+        - name: CGS_API_PORT
+          value: "8000"
+        - name: CGS_REDIS_HOST
+          value: "clip-redis"
+        volumeMounts:
+        - name: clip-data
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: clip-data
+        persistentVolumeClaim:
+          claimName: clip-data-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clip-generation-worker
+  labels:
+    app: clip-generation-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: clip-generation-worker
+  template:
+    metadata:
+      labels:
+        app: clip-generation-worker
+    spec:
+      containers:
+      - name: clip-worker
+        image: ${DOCKER_REGISTRY}/clip-generation-service:latest
+        imagePullPolicy: Always
+        command: ["python", "-m", "app.clip_generation.main", "--worker-count", "2"]
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "1Gi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
+        env:
+        - name: CGS_OUTPUT_DIR
+          value: "/app/data/output"
+        - name: CGS_TEMP_DIR
+          value: "/app/data/temp"
+        - name: CGS_FFMPEG_PATH
+          value: "/usr/bin/ffmpeg"
+        - name: CGS_WORKER_COUNT
+          value: "2"
+        - name: CGS_SERVICE_NAME
+          value: "clip-generation-worker"
+        - name: CGS_SERVICE_VERSION
+          value: "1.0.0"
+        - name: CGS_REDIS_HOST
+          value: "clip-redis"
+        volumeMounts:
+        - name: clip-data
+          mountPath: /app/data
+      volumes:
+      - name: clip-data
+        persistentVolumeClaim:
+          claimName: clip-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clip-generation-service
+spec:
+  selector:
+    app: clip-generation-service
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clip-redis
+  labels:
+    app: clip-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clip-redis
+  template:
+    metadata:
+      labels:
+        app: clip-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        command: ["redis-server", "--appendonly", "yes"]
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clip-redis
+spec:
+  selector:
+    app: clip-redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: clip-data-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: clip-worker-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: clip-generation-worker
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80 

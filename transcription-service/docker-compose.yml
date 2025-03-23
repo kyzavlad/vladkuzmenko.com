@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # API service
+  transcription-api:
+    build: .
+    container_name: transcription-api
+    restart: unless-stopped
+    ports:
+      - "8002:8000"  # Map to port 8002 on host to avoid conflicts
+    volumes:
+      - ./storage:/app/storage
+    environment:
+      - ENVIRONMENT=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=transcription
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - AUTH_SERVICE_URL=http://auth-service:8000
+      - VIDEO_PROCESSING_SERVICE_URL=http://video-processing-service:8000
+      - SERVICE_API_KEY=${SERVICE_API_KEY}
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - ai-video-platform
+
+  # Worker service
+  transcription-worker:
+    build: .
+    container_name: transcription-worker
+    restart: unless-stopped
+    command: python -m app.worker
+    volumes:
+      - ./storage:/app/storage
+    environment:
+      - ENVIRONMENT=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=transcription
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - AUTH_SERVICE_URL=http://auth-service:8000
+      - VIDEO_PROCESSING_SERVICE_URL=http://video-processing-service:8000
+      - SERVICE_API_KEY=${SERVICE_API_KEY}
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - ai-video-platform
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:14
+    container_name: transcription-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=transcription
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - ai-video-platform
+
+  # RabbitMQ message broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: transcription-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5673:5672"    # AMQP port (changed to avoid conflicts)
+      - "15673:15672"  # Management UI port (changed to avoid conflicts)
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - ai-video-platform
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+
+networks:
+  ai-video-platform:
+    external: true 

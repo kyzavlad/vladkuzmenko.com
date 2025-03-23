@@ -1,0 +1,240 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transcription-api
+  labels:
+    app: transcription-api
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: transcription-api
+  template:
+    metadata:
+      labels:
+        app: transcription-api
+        component: api
+    spec:
+      containers:
+      - name: transcription-api
+        image: ${REGISTRY_URL}/transcription-service:${IMAGE_TAG}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transcription-secrets
+              key: openai-api-key
+        - name: POSTGRES_SERVER
+          value: "transcription-postgres"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: transcription-db-credentials
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: transcription-db-credentials
+              key: password
+        - name: POSTGRES_DB
+          value: "transcription"
+        - name: RABBITMQ_HOST
+          value: "transcription-rabbitmq"
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: transcription-rabbitmq-credentials
+              key: username
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: transcription-rabbitmq-credentials
+              key: password
+        - name: SERVICE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transcription-secrets
+              key: service-api-key
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:8000"
+        - name: VIDEO_PROCESSING_SERVICE_URL
+          value: "http://video-processing-service:8000"
+        - name: STORAGE_TYPE
+          value: "s3"
+        - name: S3_BUCKET_NAME
+          value: "ai-video-platform-transcriptions"
+        - name: S3_REGION
+          value: "us-east-1"
+        - name: S3_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transcription-s3-credentials
+              key: access-key
+        - name: S3_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transcription-s3-credentials
+              key: secret-key
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+      imagePullSecrets:
+      - name: regcred
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transcription-worker
+  labels:
+    app: transcription-worker
+    component: worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: transcription-worker
+  template:
+    metadata:
+      labels:
+        app: transcription-worker
+        component: worker
+    spec:
+      containers:
+      - name: transcription-worker
+        image: ${REGISTRY_URL}/transcription-service:${IMAGE_TAG}
+        imagePullPolicy: Always
+        command: ["python", "-m", "app.worker"]
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transcription-secrets
+              key: openai-api-key
+        - name: POSTGRES_SERVER
+          value: "transcription-postgres"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: transcription-db-credentials
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: transcription-db-credentials
+              key: password
+        - name: POSTGRES_DB
+          value: "transcription"
+        - name: RABBITMQ_HOST
+          value: "transcription-rabbitmq"
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: transcription-rabbitmq-credentials
+              key: username
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: transcription-rabbitmq-credentials
+              key: password
+        - name: SERVICE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transcription-secrets
+              key: service-api-key
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:8000"
+        - name: VIDEO_PROCESSING_SERVICE_URL
+          value: "http://video-processing-service:8000"
+        - name: STORAGE_TYPE
+          value: "s3"
+        - name: S3_BUCKET_NAME
+          value: "ai-video-platform-transcriptions"
+        - name: S3_REGION
+          value: "us-east-1"
+        - name: S3_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transcription-s3-credentials
+              key: access-key
+        - name: S3_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transcription-s3-credentials
+              key: secret-key
+      imagePullSecrets:
+      - name: regcred
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transcription-api
+  labels:
+    app: transcription-api
+spec:
+  selector:
+    app: transcription-api
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: transcription-api-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - transcription-api.example.com
+    secretName: transcription-api-tls
+  rules:
+  - host: transcription-api.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: transcription-api
+            port:
+              number: 8000 

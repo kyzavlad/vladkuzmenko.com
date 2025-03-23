@@ -1,0 +1,33 @@
+# Core requirements
+numpy>=1.20.0
+opencv-python>=4.5.0
+scikit-image>=0.18.0
+scikit-learn>=0.24.0
+matplotlib>=3.4.0
+
+# NLP for content analysis
+spacy>=3.0.0
+nltk>=3.6.0
+textblob>=0.15.3
+
+# For semantic matching
+gensim>=4.2.0
+networkx>=2.7.0
+sentence-transformers>=2.2.0
+
+# Async operations
+aiohttp>=3.7.0
+asyncio>=3.4.3
+
+# Image processing
+Pillow>=8.0.0
+
+# API Integration
+requests>=2.25.0
+python-dotenv>=0.15.0
+
+# Optional for advanced features
+# Uncomment as needed
+# tensorflow>=2.4.0  # For deep learning-based scene analysis
+# torch>=1.8.0  # Alternative to TensorFlow
+# transformers>=4.5.0  # For advanced NLP features 

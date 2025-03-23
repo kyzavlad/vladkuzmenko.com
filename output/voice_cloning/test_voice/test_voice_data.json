@@ -1,0 +1,20 @@
+{
+  "voice_name": "test_voice",
+  "audio_path": "samples/voice_samples/sample_voice.wav",
+  "voice_dir": "output/voice_cloning/test_voice",
+  "creation_time": 1742202650.257102,
+  "processing_time": 0.5,
+  "pitch_stats": {
+    "mean": 120.5,
+    "std": 15.3,
+    "median": 118.7,
+    "min": 80.2,
+    "max": 180.5,
+    "range": 100.3
+  },
+  "voice_quality": {
+    "hnr": 15.8,
+    "jitter": 0.012,
+    "shimmer": 0.045
+  }
+}

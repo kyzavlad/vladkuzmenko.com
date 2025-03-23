@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Fitness Platform</title>
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --text-color: #1F2937;
+            --background-color: #F9FAFB;
+            --error-color: #EF4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            display: block;
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        p {
+            font-size: 1rem;
+            color: #6B7280;
+            margin-bottom: 2rem;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .button:hover {
+            background-color: #4338CA;
+        }
+
+        .offline-features {
+            margin-top: 2rem;
+            text-align: left;
+        }
+
+        .offline-features h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            color: #6B7280;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            color: var(--primary-color);
+            margin-right: 0.5rem;
+            font-weight: bold;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .button {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/assets/images/offline-icon.png" alt="Offline Icon" class="icon">
+        <h1>You're Offline</h1>
+        <p>Don't worry! You can still access your saved workouts and continue your fitness journey even without an internet connection.</p>
+        
+        <div class="offline-features">
+            <h2>Available Offline Features:</h2>
+            <ul class="feature-list">
+                <li>View saved workouts and exercise library</li>
+                <li>Track your workouts and progress</li>
+                <li>Access your workout history</li>
+                <li>Use the workout timer</li>
+                <li>View your fitness goals</li>
+                <li>Access saved exercise videos</li>
+            </ul>
+        </div>
+
+        <a href="/workouts" class="button">View Saved Workouts</a>
+    </div>
+
+    <script>
+        // Check connection status and update UI
+        function updateConnectionStatus() {
+            if (navigator.onLine) {
+                window.location.href = '/';
+            }
+        }
+
+        // Listen for online/offline events
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+
+        // Check connection status on load
+        updateConnectionStatus();
+    </script>
+</body>
+</html> 

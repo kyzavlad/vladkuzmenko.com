@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transcription-config
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "info"
+  POSTGRES_SERVER: "transcription-postgres"
+  POSTGRES_DB: "transcription"
+  RABBITMQ_HOST: "transcription-rabbitmq"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_QUEUE: "transcription_jobs"
+  AUTH_SERVICE_URL: "http://auth-service:8000"
+  VIDEO_PROCESSING_SERVICE_URL: "http://video-processing-service:8000"
+  STORAGE_TYPE: "s3"
+  S3_BUCKET_NAME: "ai-video-platform-transcriptions"
+  S3_REGION: "us-east-1"
+  WHISPER_MODEL: "whisper-1"
+  MAX_SEGMENT_DURATION: "600"  # 10 minutes in seconds
+  AUDIO_FORMAT: "mp3"
+  TEMP_DIR: "/tmp/transcription" 

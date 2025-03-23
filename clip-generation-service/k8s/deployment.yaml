@@ -1,0 +1,220 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clip-generation-service
+  namespace: production
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: clip-generation-service
+  template:
+    metadata:
+      labels:
+        app: clip-generation-service
+    spec:
+      containers:
+      - name: api-server
+        image: clip-generation-service:latest
+        resources:
+          requests:
+            cpu: "4"
+            memory: "8Gi"
+          limits:
+            cpu: "8"
+            memory: "16Gi"
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: redis-url
+        - name: S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: s3-bucket
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: stripe-secret-key
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: jwt-secret
+        - name: APP_ENV
+          value: "production"
+        - name: CORS_ORIGINS
+          value: "https://app.example.com"
+        - name: MAX_WORKERS
+          value: "8"
+        - name: QUEUE_SIZE
+          value: "1000"
+        - name: BATCH_SIZE
+          value: "4"
+        - name: GPU_MEMORY_LIMIT
+          value: "16Gi"
+        - name: STORAGE_PATH
+          value: "/data"
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        - name: config-volume
+          mountPath: /app/config
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      - name: gpu-worker
+        image: clip-generation-service:latest
+        command: ["python", "-m", "src.workers.gpu_worker"]
+        resources:
+          requests:
+            nvidia.com/gpu: 1
+            cpu: "8"
+            memory: "32Gi"
+          limits:
+            nvidia.com/gpu: 1
+            cpu: "16"
+            memory: "64Gi"
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: redis-url
+        - name: S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: s3-bucket
+        - name: APP_ENV
+          value: "production"
+        - name: GPU_MEMORY_LIMIT
+          value: "16Gi"
+        - name: BATCH_SIZE
+          value: "4"
+        - name: STORAGE_PATH
+          value: "/data"
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        - name: config-volume
+          mountPath: /app/config
+      - name: cpu-worker
+        image: clip-generation-service:latest
+        command: ["python", "-m", "src.workers.cpu_worker"]
+        resources:
+          requests:
+            cpu: "16"
+            memory: "32Gi"
+          limits:
+            cpu: "32"
+            memory: "64Gi"
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: redis-url
+        - name: S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: s3-bucket
+        - name: APP_ENV
+          value: "production"
+        - name: BATCH_SIZE
+          value: "8"
+        - name: STORAGE_PATH
+          value: "/data"
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        - name: config-volume
+          mountPath: /app/config
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: clip-data-pvc
+      - name: config-volume
+        configMap:
+          name: app-config
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clip-generation-service
+  namespace: production
+spec:
+  selector:
+    app: clip-generation-service
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: LoadBalancer
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: clip-generation-service
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: clip-generation-service
+  minReplicas: 4
+  maxReplicas: 12
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Custom
+    custom:
+      name: queue_length
+      target:
+        type: AverageValue
+        averageValue: 100 

@@ -1,0 +1,32 @@
+# Core dependencies
+nltk>=3.6.0
+numpy>=1.20.0
+pydantic>=1.8.0
+aiofiles>=0.7.0
+asyncio>=3.4.3
+
+# For subtitle format handling
+pysrt>=1.1.2
+webvtt-py>=0.4.6
+
+# For video processing
+ffmpeg-python>=0.2.0
+
+# For computer vision (subtitle positioning)
+opencv-python>=4.5.0  # For face detection and image processing
+scikit-image>=0.18.0  # For additional image processing capabilities
+numpy>=1.20.0  # Required for numerical operations with images
+matplotlib>=3.4.0  # Helpful for debugging and visualization
+
+# For text processing
+langdetect>=1.0.9
+jieba>=0.42.1  # For Chinese text segmentation
+
+# For reading speed calculation
+pyphen>=0.12.0  # For syllable counting
+regex>=2022.3.15  # For more advanced regex operations used in emphasis detection and text processing
+
+# For multi-language support
+unicodedata2>=14.0.0  # Enhanced Unicode support (optional, falls back to built-in unicodedata)
+PyICU>=2.8.1  # International Components for Unicode - advanced text handling
+chardet>=4.0.0  # Character encoding detection 

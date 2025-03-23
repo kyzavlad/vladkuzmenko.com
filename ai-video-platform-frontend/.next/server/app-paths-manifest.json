@@ -1,0 +1,10 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/editor/page": "app/editor/page.js",
+  "/clip-generator/page": "app/clip-generator/page.js",
+  "/platform/dashboard/page": "app/platform/dashboard/page.js",
+  "/platform/page": "app/platform/page.js",
+  "/clip-generator/clips/page": "app/clip-generator/clips/page.js",
+  "/platform/video-editor/page": "app/platform/video-editor/page.js",
+  "/clip-generator/upload/page": "app/clip-generator/upload/page.js"
+}

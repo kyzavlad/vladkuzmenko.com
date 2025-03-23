@@ -1,0 +1,114 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: transcription-api-monitor
+  labels:
+    app: transcription-api
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: transcription-api
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - ${NAMESPACE}
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: transcription-worker-monitor
+  labels:
+    app: transcription-worker
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: transcription-worker
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - ${NAMESPACE}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transcription-worker-metrics
+  labels:
+    app: transcription-worker
+spec:
+  selector:
+    app: transcription-worker
+  ports:
+  - port: 9090
+    targetPort: 9090
+    name: metrics
+  type: ClusterIP
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: transcription-service-alerts
+  labels:
+    app: transcription-service
+    prometheus: prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: transcription-service
+    rules:
+    - alert: TranscriptionAPIHighErrorRate
+      expr: sum(rate(http_request_duration_seconds_count{service="transcription-api",status_code=~"5.."}[5m])) / sum(rate(http_request_duration_seconds_count{service="transcription-api"}[5m])) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High error rate on Transcription API"
+        description: "Transcription API is experiencing high error rate (> 5%) for the last 5 minutes."
+        
+    - alert: TranscriptionAPIHighLatency
+      expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service="transcription-api"}[5m])) by (le, path)) > 2
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High latency on Transcription API"
+        description: "Transcription API is experiencing high latency (p95 > 2s) for the last 5 minutes."
+        
+    - alert: TranscriptionWorkerJobFailure
+      expr: sum(increase(transcription_jobs_failed_total[15m])) > 5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Transcription job failures"
+        description: "More than 5 transcription jobs have failed in the last 15 minutes."
+        
+    - alert: TranscriptionWorkerHighJobBacklog
+      expr: transcription_queue_size > 50
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High transcription job backlog"
+        description: "There are more than 50 jobs waiting in the transcription queue for the last 15 minutes."
+        
+    - alert: TranscriptionServicePodRestart
+      expr: increase(kube_pod_container_status_restarts_total{namespace="${NAMESPACE}", pod=~"transcription-(api|worker).*"}[1h]) > 2
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Transcription service pod restarts"
+        description: "Transcription service pods are restarting frequently." 

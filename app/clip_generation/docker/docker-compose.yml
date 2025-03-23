@@ -1,0 +1,68 @@
+version: '3'
+
+services:
+  # API Service
+  clip-service:
+    build:
+      context: ../../..
+      dockerfile: app/clip_generation/docker/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../../app:/app/app
+      - clip_data:/app/data
+    environment:
+      - CGS_OUTPUT_DIR=/app/data/output
+      - CGS_TEMP_DIR=/app/data/temp
+      - CGS_FFMPEG_PATH=/usr/bin/ffmpeg
+      - CGS_WORKER_COUNT=4
+      - CGS_SERVICE_NAME=clip-generation-service
+      - CGS_SERVICE_VERSION=1.0.0
+    depends_on:
+      - redis
+    networks:
+      - clip-network
+    restart: unless-stopped
+
+  # Redis for task queue
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - clip-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Worker service for processing tasks
+  clip-worker:
+    build:
+      context: ../../..
+      dockerfile: app/clip_generation/docker/Dockerfile
+    command: python -m app.clip_generation.main --worker-count 2
+    volumes:
+      - ../../../app:/app/app
+      - clip_data:/app/data
+    environment:
+      - CGS_OUTPUT_DIR=/app/data/output
+      - CGS_TEMP_DIR=/app/data/temp
+      - CGS_FFMPEG_PATH=/usr/bin/ffmpeg
+      - CGS_WORKER_COUNT=2
+      - CGS_SERVICE_NAME=clip-generation-worker
+      - CGS_SERVICE_VERSION=1.0.0
+    depends_on:
+      - redis
+      - clip-service
+    networks:
+      - clip-network
+    restart: unless-stopped
+
+volumes:
+  clip_data:
+  redis_data:
+
+networks:
+  clip-network:
+    driver: bridge 

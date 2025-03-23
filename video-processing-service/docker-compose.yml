@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  video-processing-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: video-processing-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs:/app/outputs
+      - ./temp:/app/temp
+      - ./broll_library:/app/broll_library
+    env_file:
+      - .env
+    environment:
+      - FFMPEG_PATH=/usr/bin/ffmpeg
+      - FFPROBE_PATH=/usr/bin/ffprobe
+      - TEMP_PATH=/app/temp
+      - OUTPUT_PATH=/app/outputs
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Uncomment to add a simple UI (optional)
+  # video-processing-ui:
+  #   image: nginx:alpine
+  #   container_name: video-processing-ui
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./ui:/usr/share/nginx/html
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf
+  #   depends_on:
+  #     - video-processing-api
+
+volumes:
+  outputs:
+  temp:
+  broll_library:

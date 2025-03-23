@@ -1,0 +1,205 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: transcription-api-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: transcription-api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow traffic from ingress controller
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx
+    # Allow traffic from within the namespace (e.g., from the video processing service)
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    # Allow traffic to PostgreSQL
+    - podSelector:
+        matchLabels:
+          app: transcription-postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    # Allow traffic to RabbitMQ
+    - podSelector:
+        matchLabels:
+          app: transcription-rabbitmq
+    ports:
+    - protocol: TCP
+      port: 5672
+  - to:
+    # Allow traffic to Authentication Service
+    - podSelector:
+        matchLabels:
+          app: auth-service
+    ports:
+    - protocol: TCP
+      port: 8000
+  - to:
+    # Allow traffic to Video Processing Service
+    - podSelector:
+        matchLabels:
+          app: video-processing-service
+    ports:
+    - protocol: TCP
+      port: 8000
+  - to:
+    # Allow DNS resolution
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    # Allow internet access for S3 and OpenAI API
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: transcription-worker-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: transcription-worker
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow traffic from Prometheus for metrics scraping
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+      podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to:
+    # Allow traffic to PostgreSQL
+    - podSelector:
+        matchLabels:
+          app: transcription-postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    # Allow traffic to RabbitMQ
+    - podSelector:
+        matchLabels:
+          app: transcription-rabbitmq
+    ports:
+    - protocol: TCP
+      port: 5672
+  - to:
+    # Allow traffic to Video Processing Service
+    - podSelector:
+        matchLabels:
+          app: video-processing-service
+    ports:
+    - protocol: TCP
+      port: 8000
+  - to:
+    # Allow DNS resolution
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    # Allow internet access for S3 and OpenAI API
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: transcription-postgres-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: transcription-postgres
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    # Allow traffic from transcription api
+    - podSelector:
+        matchLabels:
+          app: transcription-api
+    # Allow traffic from transcription worker
+    - podSelector:
+        matchLabels:
+          app: transcription-worker
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: transcription-rabbitmq-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: transcription-rabbitmq
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    # Allow traffic from transcription api
+    - podSelector:
+        matchLabels:
+          app: transcription-api
+    # Allow traffic from transcription worker
+    - podSelector:
+        matchLabels:
+          app: transcription-worker
+    ports:
+    - protocol: TCP
+      port: 5672
+  - from:
+    # Allow management UI traffic from within the namespace
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 15672 

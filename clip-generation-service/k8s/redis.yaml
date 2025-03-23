@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cache
+  namespace: production
+spec:
+  serviceName: redis-cache
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis-cache
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:6
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - /etc/redis/redis.conf
+        resources:
+          requests:
+            cpu: "4"
+            memory: "8Gi"
+          limits:
+            cpu: "8"
+            memory: "16Gi"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: config
+          mountPath: /etc/redis
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      volumes:
+      - name: config
+        configMap:
+          name: redis-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi
+      storageClassName: high-performance-ssd
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cache
+  namespace: production
+spec:
+  selector:
+    app: redis-cache
+  ports:
+  - port: 6379
+    targetPort: 6379
+  clusterIP: None
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: production
+data:
+  redis.conf: |
+    maxmemory 12gb
+    maxmemory-policy allkeys-lru
+    appendonly yes
+    appendfsync everysec
+    no-appendfsync-on-rewrite yes
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+    save 900 1
+    save 300 10
+    save 60 10000
+    stop-writes-on-bgsave-error yes
+    rdbcompression yes
+    rdbchecksum yes
+    dbfilename dump.rdb
+    dir /data
+    maxclients 10000
+    timeout 0
+    tcp-keepalive 300
+    daemonize no
+    supervised systemd
+    pidfile /var/run/redis_6379.pid
+    loglevel notice
+    logfile ""
+    databases 16
+    always-show-logo yes
+    set-proc-title yes
+    proc-title-template "{title} {listen-addr} {server-mode}"
+    latency-monitor-threshold 100
+    notify-keyspace-events ""
+    hash-max-ziplist-entries 512
+    hash-max-ziplist-value 64
+    list-max-ziplist-size -2
+    list-compress-depth 0
+    set-max-intset-entries 512
+    zset-max-ziplist-entries 128
+    zset-max-ziplist-value 64
+    hll-sparse-max-bytes 3000
+    stream-node-max-bytes 4096
+    stream-node-max-entries 100
+    activedefrag yes
+    active-defrag-ignore-bytes 100mb
+    active-defrag-threshold-lower 10
+    active-defrag-threshold-upper 100
+    active-defrag-cycle-min 25
+    active-defrag-cycle-max 75
+    io-threads 4
+    io-threads-do-reads no
+    lua-time-limit 5000
+    slowlog-log-slower-than 10000
+    slowlog-max-len 128 
