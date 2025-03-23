@@ -7,7 +7,8 @@ LABEL description="AI Video Platform - Video Processing Service"
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
-    TZ=UTC
+    TZ=UTC \
+    PYTHON_VERSION=3.10
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -39,6 +40,7 @@ COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir wheel setuptools && \
     pip install --no-cache-dir -r requirements.txt
 
 # Download NLTK data
