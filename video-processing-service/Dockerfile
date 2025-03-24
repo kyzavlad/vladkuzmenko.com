@@ -47,6 +47,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir wheel setuptools && \
     pip install --no-cache-dir numpy==1.24.3 && \
+    pip install --no-cache-dir scipy==1.10.1 && \
     pip install --no-cache-dir -r requirements.txt
 
 # Download NLTK data

@@ -69,4 +69,8 @@ pytest-cov==2.12.1
 black==21.10b0
 isort==5.9.3
 flake8==4.0.1
-mypy==0.910 
+mypy==0.910
+
+# Additional Dependencies
+nltk==3.8.1
+spacy==3.5.3 

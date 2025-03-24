@@ -1,7 +1,6 @@
-# Version control
+# Git
 .git
 .gitignore
-.github
 
 # Python
 __pycache__/
@@ -25,7 +24,7 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual environments
+# Virtual Environment
 venv/
 env/
 ENV/
@@ -36,33 +35,31 @@ ENV/
 *.swp
 *.swo
 
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
+# Project specific
+*.log
+.env
+.env.*
+!.env.example
+outputs/
+temp/
+uploads/
+*.mp4
+*.avi
+*.mov
+*.wav
+*.mp3
 
-# Test files and directories
-test/
+# Test files
 tests/
-test-*/
+test_*.py
+*_test.py
 
 # Documentation
 docs/
 *.md
+!README.md
 
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Logs
-logs/
-*.log
-
-# Output directories
-outputs/
-batch_outputs/
-
-# Example data
-examples/outputs/
-examples/batch_output/ 
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore 
